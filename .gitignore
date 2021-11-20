@@ -120,3 +120,6 @@ dist
 cache/
 artifacts/
 typechain-types/
+
+
+hardhat.config.ts

@@ -340,11 +340,46 @@ contract Bank is IBank {
      * @return - true if the liquidation was successful, otherwise revert.
      */
     function liquidate(address token, address account)
-        external
-        payable
-        override
-        returns (bool)
-    {}
+            external
+            payable
+            override
+            returns (bool)
+    {
+        require (token == HAK, "token not supported");
+        require (account != msg.sender, "cannot liquidate own position");
+
+        updateInterest(ETH, account);
+        updateInterest(HAK, account);
+        updateInterestOwed(account);
+
+        Account storage hak_account = getAccountStorage(HAK, account);
+        BorrowAccount storage borrow_account = borrowAccounts[account];
+
+        uint256 collateral = calcCollateralRatio(
+            hak_account,
+            borrow_account
+        );
+
+        console.log("collateral is %s", collateral);
+        // Is this correct?
+        require (collateral <= 15000, "healty position");
+
+        // Check for insufficient funds
+        uint256 amount_owed = borrow_account.amountBorrowed + borrow_account.interestOwed;
+        require (msg.value >= amount_owed, "insufficient ETH sent by liquidator");
+
+        // Perform liquidation
+        uint256 hak_liquidated = hak_account.deposit + hak_account.interest;
+        uint256 eth_remaining = msg.value - amount_owed;
+
+        hak_account.deposit = 0;
+        hak_account.interest = 0;
+        hak_account.lastInterestBlock = 0;
+
+        IERC20(HAK).transfer(msg.sender, hak_liquidated);
+        emit Liquidate(msg.sender, account, HAK, hak_liquidated, eth_remaining);
+        return true;
+    }
 
     /**
      * The purpose of this function is to return the collateral ratio for any account.
