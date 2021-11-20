@@ -119,7 +119,6 @@ contract Bank is IBank {
         checkTokenType(token);
         // If currency is ETH, take the `value` attached to the message rather than `amount`
         // -> Ether is automatically transferred via `payable` keyword
-        //   -> TODO investigate as potential vulnerability
         if (token == ETH) {
             amount = msg.value;
         }
@@ -128,7 +127,6 @@ contract Bank is IBank {
             // Check that the sender has enough HAK to cover the deposit
             require(IERC20(token).balanceOf(msg.sender) >= amount);
             // Transfer the sender's HAK to this account
-            // TODO: understand why/how we get permission to make the transfer
             IERC20(token).transferFrom(msg.sender, address(this), amount);
         }
 
@@ -157,7 +155,6 @@ contract Bank is IBank {
         override
         returns (uint256)
     {
-        // TODO: is this the correct logic?
         //  -> assume we can withdraw only from the deposit, and send the whole interest back
         checkTokenType(token);
         Account storage user_account = getAccountStorage(token, msg.sender);
@@ -404,7 +401,6 @@ contract Bank is IBank {
             Account memory hak_account = getAccountMemory(HAK, account);
             BorrowAccount memory borrow_account = borrowAccounts[account];
 
-            // TODO: double-check
             hak_account.interest += calcNewInterest(HAK, account);
             borrow_account.interestOwed += calcNewInterestOwed(account);
 
@@ -415,7 +411,6 @@ contract Bank is IBank {
             console.log("Calculated collateral = %s", collateral);
             return collateral;
         }
-        // TODO: WHAT TO RETURN FOR ETH?
         return 0;
     }
 
